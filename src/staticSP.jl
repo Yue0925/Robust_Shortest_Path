@@ -84,21 +84,65 @@ function cplexSolveStaticSP()
     # objective function
     @objective(M, Min, sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] for l in 1:arcs))
     
+    # start a chronometer
+    start = time()
+
     # solve the problem
     optimize!(M)
+
+    computationTime = time() - start
+    exploredNodes = MOI.get(backend(M), MOI.NodeCount())
 
     # status of model
     status = termination_status(M)
     isOptimal = status==MOI.OPTIMAL
 
+    path = Array{Tuple{Int64, Int64}, 1}()
+    vertices = Array{Int64, 1}()
     # display solution
     println("isOptimal ? ", isOptimal)
     println("the path from ", s, " to ", t, " is :")
     for i in 1:n
+        if JuMP.value(y[i]) > TOL
+            append!(vertices, i)
+        end
         for j in 1:n 
             if JuMP.value(x[i, j]) > TOL
                 println("(", i, ", ", j, ")")
+                append!(path, [(i, j)])
             end
         end
     end
+
+    println("objective value : ", objective_value(M))
+    println("total weight : ", sum(p[v] for v in vertices))
+    println("time(s) : ", computationTime)
+    println("nodes : ", exploredNodes)
+
+    return path, vertices
+end
+
+
+"""
+Verify whether the solution solved by CPLEX is feasible 
+(i.e. - a route from s to t 
+      - the total weight doesn't not exceed to the limit S ) 
+"""
+function verifyStaticSP(path::Array{Tuple{Int64, Int64}, 1}, vertices::Array{Int64, 1})
+    predecessor = [0 for _ in 1:n]
+
+    for arc in path
+        predecessor[arc[2]] = arc[1]
+    end
+
+    for v in vertices
+        if v == s
+            continue
+        end
+        if predecessor[v] == 0
+            return false
+        end
+    end
+
+    return sum(p[v] for v in vertices) <= S
 end

@@ -7,5 +7,6 @@ function test()
     # charging data (variables are global !!! )
     include(dir * fileName)
 
-    cplexSolveStaticSP()
+    path, vertices = cplexSolveStaticSP()
+    verifyStaticSP(path, vertices)
 end
