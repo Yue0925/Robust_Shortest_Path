@@ -26,8 +26,10 @@ function test()
 
     preparation(dir, fileName)
 
-    #cuttingPlanes()
-
+    path, vertices = cuttingPlanes()
+    isFeasible = verifyStaticSP(path, vertices)
+    println("isFeasible? ", isFeasible)
+    
     # cplex solve
     path, vertices = cplexSolveStaticSP()
     # verification
