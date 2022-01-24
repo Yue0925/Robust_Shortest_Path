@@ -8,41 +8,44 @@ Define / modelize the master problem
 """
 function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1})
     # modelization
-    M = Model(CPLEX.Optimizer) 
-    # set_optimizer_attribute(M, "CPX_PARAM_MIPDISPLAY", 2) # MIP display
-    set_optimizer_attribute(M, "CPXPARAM_TimeLimit", 500) # seconds
+    global MP = Model(CPLEX.Optimizer) 
+    # set_optimizer_attribute(MP, "CPX_PARAM_MIPDISPLAY", 2) # MIP display
+    set_optimizer_attribute(MP, "CPXPARAM_TimeLimit", 500) # seconds
 
     # variables
-    @variable(M, y[1:n], Bin)
-    @variable(M, x[1:n, 1:n], Bin)
-    @variable(M, z)
+    @variable(MP, y[1:n], Bin)
+    @variable(MP, x[1:n, 1:n], Bin)
+    @variable(MP, z)
 
     # ---------------
     # prefix values
     # ---------------
-    @constraint(M, x[n, n] == 0) # no bucles
+    @constraint(MP, x[n, n] == 0) # no bucles
 
     for i in 1:n-1
-        @constraint(M, x[i, i] == 0)
+        @constraint(MP, x[i, i] == 0)
 
         for j in i+1:n
             # if arc x[ij]=1, then arc x[ji]=0
-            @constraint(M, x[i, j] + x[j, i] <= 1) 
+            @constraint(MP, x[i, j] + x[j, i] <= 1) 
 
             # if i, j are not adjacent, then x[ij] = 0
             if !Adjacenct[i, j]
-                @constraint(M, x[i, j] == 0)
-                @constraint(M, x[j, i] == 0)
+                @constraint(MP, x[i, j] == 0)
+                @constraint(MP, x[j, i] == 0)
             end
         end
     end
 
 
     # robust distance constraint
-    @constraint(M, sum(x[i, j] * U1_star[i, j] for i in 1:n for j in 1:n) <= z)
+    #@constraint(MP, sum(x[i, j] * U1_star[i, j] for i in 1:n for j in 1:n) <= z)
+    @constraint(MP, sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] for l in 1:arcs) <= z)
+
 
     # robust weight constraint
-    @constraint(M, sum(y[i] * U2_star[i] for i in 1:n) <= S)
+    #@constraint(MP, sum(y[i] * U2_star[i] for i in 1:n) <= S)
+    @constraint(MP, sum(y[i] * p[i] for i in 1:n) <= S)
 
 
     # -----------------------------------
@@ -50,19 +53,19 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1})
     # -----------------------------------
 
     # only one arc outgoing s 
-    @constraint(M, sum(x[s, j] for j in 1:n) == 1)
-    @constraint(M, y[s] == 1)
+    @constraint(MP, sum(x[s, j] for j in 1:n) == 1)
+    @constraint(MP, y[s] == 1)
 
     # only one arc incoming t
-    @constraint(M, sum(x[i, t] for i in 1:n) == 1)
-    @constraint(M, y[t] == 1)
+    @constraint(MP, sum(x[i, t] for i in 1:n) == 1)
+    @constraint(MP, y[t] == 1)
 
     # flot conversation
     for v in 1:n
         if v == s || v == t 
             continue
         end
-        @constraint(M, sum(x[v, j] for j in 1:n) - sum(x[i, v] for i in 1:n) == 0)
+        @constraint(MP, sum(x[v, j] for j in 1:n) - sum(x[i, v] for i in 1:n) == 0)
     end
 
     # for each intermediate vertex v, at most one arc outgoing / incoming
@@ -70,15 +73,14 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1})
         if v == s || v == t 
             continue
         end
-        @constraint(M, sum(x[v, j] for j in 1:n) == y[v])
-        @constraint(M, sum(x[i, v] for i in 1:n) == y[v])
+        @constraint(MP, sum(x[v, j] for j in 1:n) == y[v])
+        @constraint(MP, sum(x[i, v] for i in 1:n) == y[v])
     end
 
     # objective function
-    @objective(M, Min, z)
+    @objective(MP, Min, z)
 
-    set_silent(M) # turn off cplex output
-    return M
+    set_silent(MP) # turn off cplex output
 end
 
 
@@ -112,8 +114,7 @@ function subPB1(x_star::Array{Float64,2})
     @constraint(SM1, sum(δ1[i, j] for i in 1:n for j in 1:n) <= d1)
 
     # objective function
-    @objective(SM1, Max, sum(x_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] 
-    * Mat[l, 3] *(1 + δ1[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) for l in 1:arcs))
+    @objective(SM1, Max, sum(x_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] *(1 + δ1[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) for l in 1:arcs))
 
     set_silent(SM1) # turn off cplex output
     return SM1
@@ -135,7 +136,7 @@ function subPB2(y_star::Array{Float64,1})
 
     # objective function
     @objective(SM2, Max, sum(y_star[i] * (p[i] + δ2[i] * ph[i]) for i in 1:n ))
-
+    
     set_silent(SM2) # turn off cplex output
     return SM2
 end
@@ -163,23 +164,23 @@ function cuttingPlanes()
     # ------------------------------------
     # step 1 : resolve the master problem
     # ------------------------------------
-    M = masterPB(U1_star, U2_star)
+    masterPB(U1_star, U2_star)
 
     # solve the master problem
-    optimize!(M)
+    optimize!(MP)
 
     # status of model
-    statusM = termination_status(M)
-    isOptimalM = statusM==MOI.OPTIMAL
-    println("masterPB isOptimal? ", isOptimalM)
+    statusMP = termination_status(MP)
+    isOptimalMP = statusMP==MOI.OPTIMAL
+    println("masterPB isOptimal? ", isOptimalMP)
 
     # get variables
-    x_star = value.(M[:x])
-    z_star = value(M[:z])
-    y_star = value.(M[:y])
-    x = M[:x]
-    z = M[:z]
-    y = M[:y]
+    x_star = value.(MP[:x])
+    z_star = value(MP[:z])
+    y_star = value.(MP[:y])
+    x = MP[:x]
+    z = MP[:z]
+    y = MP[:y]
     println("master z = ", z_star)
 
 
@@ -219,7 +220,11 @@ function cuttingPlanes()
     # iteratively add senario to master problem
     # until reach the optimal condition
     # ----------------------------------------------------
-    while abs(z_star - z1_sub) > TOL || z2_sub > S
+    while abs(z_star - z1_sub) > TOL || z2_sub - S > TOL
+        if ite >300
+            break
+        end
+
         ite += 1
         println("--------------")
         println("step ", ite)
@@ -229,40 +234,40 @@ function cuttingPlanes()
         if abs(z_star - z1_sub) > TOL
             println("SP1 violated")
             δ1_star = value.(SM1[:δ1])
-            @constraint(M, sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] 
-            * Mat[l, 3] *(1 + δ1_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) for l in 1:arcs) <= z)
+            @constraint(MP, sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] *(1 + δ1_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) for l in 1:arcs) <= z)
         end
 
         # if the SP2 violates
-        if z2_sub > S
+        if z2_sub - S > TOL
             println("SP2 violated")
             δ2_star = value.(SM2[:δ2])
-            @constraint(M, sum(y[i] * (p[i] + δ2_star[i] * ph[i]) for i in 1:n ) <= S)
+            @constraint(MP, sum(y[i] * (p[i] + δ2_star[i] * ph[i]) for i in 1:n ) <= S)
         end
 
         # ------------------------------------
         # step 1 : resolve the master problem
         # ------------------------------------
-        optimize!(M)
+        optimize!(MP)
 
         # status of model
-        statusM = termination_status(M)
-        isOptimalM = statusM==MOI.OPTIMAL
-        println("masterPB isOptimal? ", isOptimalM)
+        statusMP = termination_status(MP)
+        isOptimalMP = statusMP==MOI.OPTIMAL
+        println("masterPB isOptimal? ", isOptimalMP)
 
         # get variables
-        x_star = value.(M[:x])
-        z_star = value(M[:z])
-        y_star = value.(M[:y])
-        x = M[:x]
-        z = M[:z]
-        y = M[:y]
+        x_star = value.(MP[:x])
+        z_star = value(MP[:z])
+        y_star = value.(MP[:y])
+        x = MP[:x]
+        z = MP[:z]
+        y = MP[:y]
         println("master z = ", z_star)
 
 
         # ------------------------------------
         # step 2 : resolve the sub problems
         # ------------------------------------
+        SM1 = subPB1(x_star)
         optimize!(SM1)
 
         # status of model
@@ -274,6 +279,7 @@ function cuttingPlanes()
         z1_sub = objective_value(SM1)
         println("z1_sub = ", z1_sub)
 
+        SM2 = subPB2(y_star)
         optimize!(SM2)
 
         # status of model
