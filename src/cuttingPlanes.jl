@@ -4,13 +4,54 @@ TOL = 0.00001
 
 
 """
-Define / modelize the master problem
+Branch and Cut approach, cutting planes algorithm using callback.
 """
-function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1})
+function brunchAndCut()
+    U1_star, U2_star = initSenario()
+    masterPB(U1_star, U2_star, true)
+    optimize!(MP)
+
+    # status of model
+    statusMP = termination_status(MP)
+    isOptimalMP = statusMP==MOI.OPTIMAL
+    println("masterPB isOptimal? ", isOptimalMP)
+
+
+    x = MP[:x]
+    y = MP[:y]
+
+    path = Array{Tuple{Int64, Int64}, 1}()
+    vertices = Array{Int64, 1}()
+    println("the path from ", s, " to ", t, " is :")
+    for i in 1:n
+        if JuMP.value(y[i]) > TOL
+            append!(vertices, i)
+        end
+        for j in 1:n 
+            if JuMP.value(x[i, j]) > TOL
+                println("(", i, ", ", j, ")")
+                append!(path, [(i, j)])
+            end
+        end
+    end
+
+    println("objective value : ", objective_value(MP))
+    println("total weight : ", sum(p[v] for v in vertices))
+    return path, vertices
+end
+
+"""
+Define / modelize the master problem, by defaut we dont use callback 
+"""
+function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1}, BranchCut=false)
     # modelization
     global MP = Model(CPLEX.Optimizer) 
     # set_optimizer_attribute(MP, "CPX_PARAM_MIPDISPLAY", 2) # MIP display
-    set_optimizer_attribute(MP, "CPXPARAM_TimeLimit", 500) # seconds
+    #set_optimizer_attribute(MP, "CPXPARAM_TimeLimit", 500) # seconds
+    # It is imposed to use only 1 thread in Julia with CPLEX to use the callbacks
+    if BranchCut
+        MOI.set(MP, MOI.NumberOfThreads(), 1) #TODO : but it seems that it's not necessary !
+    end
 
     # variables
     @variable(MP, y[1:n], Bin)
@@ -80,6 +121,52 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1})
     # objective function
     @objective(MP, Min, z)
 
+
+    function callback_cuttingPlanes(cb_data::CPLEX.CallbackContext) # context_id::Clong
+        println("callback")
+        # get current variables
+        x_star = zeros(n, n)
+        y_star = zeros((n))
+        for i in 1:n
+            y_star[i] = callback_value(cb_data, y[i])
+            for j in 1:n
+                x_star[i, j] = callback_value(cb_data, x[i, j])
+            end
+        end
+        z_star = callback_value(cb_data, z)
+
+        # solve the sub problems
+        SM1 = subPB1(x_star)
+        optimize!(SM1)
+        z1_sub = objective_value(SM1)
+
+        SM2 = subPB2(y_star)
+        optimize!(SM2)
+        z2_sub = objective_value(SM2)
+
+        # if SP1 violates
+        if abs(z_star - z1_sub) > TOL
+            println("SP1 violated")
+            δ1_star = value.(SM1[:δ1])
+            constraint1 = @build_constraint(sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]
+            * Mat[l, 3] *(1 + δ1_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) for l in 1:arcs) <= z)
+
+            MOI.submit(MP, MOI.LazyConstraint(cb_data), constraint1)
+        end
+
+        # if the SP2 violates
+        if z2_sub - S > TOL
+            println("SP2 violated")
+            δ2_star = value.(SM2[:δ2])
+            constraint2 = @build_constraint(sum(y[i] * (p[i] + δ2_star[i] * ph[i]) for i in 1:n ) <= S)
+
+            MOI.submit(MP, MOI.LazyConstraint(cb_data), constraint2)
+        end
+    end
+
+    if BranchCut
+        MOI.set(MP, MOI.LazyConstraintCallback(), callback_cuttingPlanes)
+    end
     set_silent(MP) # turn off cplex output
 end
 
@@ -142,13 +229,11 @@ function subPB2(y_star::Array{Float64,1})
 end
 
 
+
 """
-The naive cutting planes algorithm
+Initialize the incertitudes senarios, by defaut d_ij^1 = d_ij 
 """
-function cuttingPlanes()
-    # ----------------------------------------------------
-    # intialize the incertitudes, by defaut d_ij^1 = d_ij 
-    # ----------------------------------------------------
+function initSenario()
     # TODO: try with other possibilities
     U1_star = zeros(n, n)
     for l in 1:arcs
@@ -156,6 +241,20 @@ function cuttingPlanes()
     end
 
     U2_star = [i for i in p]
+    return U1_star, U2_star
+end
+
+
+
+"""
+The naive cutting planes algorithm
+"""
+function cuttingPlanes()
+    # ---------------------------
+    # intialize the incertitudes
+    # ---------------------------
+    U1_star, U2_star = initSenario()
+
     ite = 1
     println("--------------")
     println("step ", ite)
