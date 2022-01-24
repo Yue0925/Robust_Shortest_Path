@@ -26,13 +26,13 @@ function test()
 
     preparation(dir, fileName)
 
-    cuttingPlanes()
+    #cuttingPlanes()
 
-    # # cplex solve
-    # path, vertices = cplexSolveStaticSP()
-    # # verification
-    # isFeasible = verifyStaticSP(path, vertices)
-    # println("isFeasible? ", isFeasible)
+    # cplex solve
+    path, vertices = cplexSolveStaticSP()
+    # verification
+    isFeasible = verifyStaticSP(path, vertices)
+    println("isFeasible? ", isFeasible)
 
     # files = ["20_USA-road-d.BAY.gr", "20_USA-road-d.COL.gr", "20_USA-road-d.NY.gr", "40_USA-road-d.BAY.gr"]
     # for file in files #readdir(dir)

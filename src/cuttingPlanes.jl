@@ -180,6 +180,7 @@ function cuttingPlanes()
     x = M[:x]
     z = M[:z]
     y = M[:y]
+    println("master z = ", z_star)
 
 
     # ------------------------------------
@@ -256,6 +257,8 @@ function cuttingPlanes()
         x = M[:x]
         z = M[:z]
         y = M[:y]
+        println("master z = ", z_star)
+
 
         # ------------------------------------
         # step 2 : resolve the sub problems
