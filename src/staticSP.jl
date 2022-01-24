@@ -13,15 +13,10 @@ ATTENTION: data should be charged before calling this function !
 """
 function cplexSolveStaticSP()
 
-    # matrix adjacecy 
-    Adjacenct = falses(n, n) 
-    arcs = size(Mat, 1)
-    for i in 1:arcs
-        Adjacenct[round(Int, Mat[i, 1]), round(Int, Mat[i, 2])] = true
-    end
-
     # modelization
-    M = Model(CPLEX.Optimizer)
+    M = Model(CPLEX.Optimizer) 
+    # set_optimizer_attribute(M, "CPX_PARAM_MIPDISPLAY", 2) # MIP display
+    set_optimizer_attribute(M, "CPXPARAM_TimeLimit", 500) # seconds
 
     # variables
     @variable(M, y[1:n], Bin)
@@ -119,7 +114,7 @@ function cplexSolveStaticSP()
     println("time(s) : ", computationTime)
     println("nodes : ", exploredNodes)
 
-    return path, vertices
+    return path, vertices, isOptimal
 end
 
 
