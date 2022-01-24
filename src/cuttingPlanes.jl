@@ -293,4 +293,22 @@ function cuttingPlanes()
 
     end
 
+    path = Array{Tuple{Int64, Int64}, 1}()
+    vertices = Array{Int64, 1}()
+    println("the path from ", s, " to ", t, " is :")
+    for i in 1:n
+        if JuMP.value(y[i]) > TOL
+            append!(vertices, i)
+        end
+        for j in 1:n 
+            if JuMP.value(x[i, j]) > TOL
+                println("(", i, ", ", j, ")")
+                append!(path, [(i, j)])
+            end
+        end
+    end
+
+    println("objective value : ", objective_value(MP))
+    println("total weight : ", sum(p[v] for v in vertices))
+    return path, vertices
 end
