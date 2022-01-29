@@ -11,7 +11,7 @@
 # Suggestions
 
 * Rather than charging libraries in every file, uisng libraries only once in terminal before executing files. 
-'''Julia
+'''julia
 using CPLEX 
 using JuMP
 using StatsBase
@@ -19,6 +19,6 @@ using Random
 '''
 
 * Package required : 
-'''Julia
+'''julia
   import Pkg; Pkg.add("StatsBase")
 '''
