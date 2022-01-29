@@ -12,15 +12,15 @@
 
 * Rather than charging libraries in every file, uisng libraries only once in terminal before executing files. 
   
-'''julia
+```julia
 using CPLEX 
 using JuMP
 using StatsBase
 using Random
-'''
+```
 
 * Package required : 
   
-'''julia
+```julia
   import Pkg; Pkg.add("StatsBase")
-'''
+```
