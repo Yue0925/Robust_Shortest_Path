@@ -26,7 +26,14 @@ function test()
 
     preparation(dir, fileName)
 
-    # path, vertices = cuttingPlanes()
+    println("cuting planes exact")
+    path, vertices = cuttingPlanes(false, 2)
+    isFeasible = verifyStaticSP(path, vertices)
+    println("isFeasible? ", isFeasible)
+
+
+    # println("cuting planes heurisric")
+    # path, vertices = cuttingPlanes(true)
     # isFeasible = verifyStaticSP(path, vertices)
     # println("isFeasible? ", isFeasible)
 
@@ -36,10 +43,10 @@ function test()
     # println("isFeasible? ", isFeasible)
 
     
-    println("sub-problem heurisric")
-    path, vertices = brunchAndCut(false, true)
-    isFeasible = verifyStaticSP(path, vertices)
-    println("isFeasible? ", isFeasible)
+    # println("sub-problem heurisric")
+    # path, vertices = brunchAndCut(false, true)
+    # isFeasible = verifyStaticSP(path, vertices)
+    # println("isFeasible? ", isFeasible)
 
     
     # # cplex solve
