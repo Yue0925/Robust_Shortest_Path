@@ -6,9 +6,9 @@ TOL = 0.00001
 """
 Branch and Cut approach, cutting planes algorithm using callback.
 """
-function brunchAndCut()
+function brunchAndCut(Exact=false, Heur = false)
     U1_star, U2_star = initSenario()
-    masterPB(U1_star, U2_star, true)
+    masterPB(U1_star, U2_star, Exact, Heur)
     optimize!(MP)
 
     # status of model
@@ -40,17 +40,28 @@ function brunchAndCut()
     return path, vertices
 end
 
+
+
+"""
+An heurisric approach solving the sub-problem SP1 during the cutting planes algorithm.
+"""
+function heuristicSP1()
+    
+end
+
+
+
 """
 Define / modelize the master problem, by defaut we dont use callback 
 """
-function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1}, BranchCut=false)
+function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1}, ExactCut=false, HeurCut = false)
     # modelization
     global MP = Model(CPLEX.Optimizer) 
     # set_optimizer_attribute(MP, "CPX_PARAM_MIPDISPLAY", 2) # MIP display
     #set_optimizer_attribute(MP, "CPXPARAM_TimeLimit", 500) # seconds
     # It is imposed to use only 1 thread in Julia with CPLEX to use the callbacks
-    if BranchCut
-        MOI.set(MP, MOI.NumberOfThreads(), 1) #TODO : but it seems that it's not necessary !
+    if ExactCut || HeurCut
+        MOI.set(MP, MOI.NumberOfThreads(), 1)
     end
 
     # variables
@@ -122,8 +133,11 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1}, BranchCut=
     @objective(MP, Min, z)
 
 
+    """
+    In the callback function, we solve the two sub-problems exact LP solutions for the cutting planes algorithm.
+    """
     function callback_cuttingPlanes(cb_data::CPLEX.CallbackContext) # context_id::Clong
-        println("callback")
+        println("callback exact")
         # get current variables
         x_star = zeros(n, n)
         y_star = zeros((n))
@@ -145,7 +159,7 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1}, BranchCut=
         z2_sub = objective_value(SM2)
 
         # if SP1 violates
-        if abs(z_star - z1_sub) > TOL
+        if z1_sub > z_star #abs(z_star - z1_sub) > TOL
             println("SP1 violated")
             δ1_star = value.(SM1[:δ1])
             constraint1 = @build_constraint(sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]
@@ -164,9 +178,86 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Int64,1}, BranchCut=
         end
     end
 
-    if BranchCut
-        MOI.set(MP, MOI.LazyConstraintCallback(), callback_cuttingPlanes)
+    """
+    In the callback function, we solve the two sub-problems heuristicly for the cutting planes algorithm.
+    """
+    function callback_heuristics(cb_data::CPLEX.CallbackContext)
+        println("callback heuristic")
+        # get current variables
+        x_star = zeros(n, n)
+        y_star = zeros((n))
+        for i in 1:n
+            y_star[i] = callback_value(cb_data, y[i])
+            for j in 1:n
+                x_star[i, j] = callback_value(cb_data, x[i, j])
+            end
+        end
+        z_star = callback_value(cb_data, z)
+
+        # -------------
+        # solve SP1
+        # -------------
+        maxAugmentation = Dict(l => 
+        x_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] * (1 + Mat[l, 4]) for l in 1:arcs)
+        δ1_heur = zeros(n, n)
+        z1 = 0
+        descendingArcs = reverse!(sort(collect(maxAugmentation), by= x -> x[2]))
+
+        for (l, v) in descendingArcs
+            # if the total augmentation limit doesn't exceed
+            if sum(δ1_heur) + Mat[l, 4] <= d1
+                z1 += v
+                δ1_heur[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] = Mat[l, 4]
+            else
+                δ1_heur[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] = d1 - sum(δ1_heur)
+                z1 += x_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] * (1 + δ1_heur[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) 
+                break
+            end
+        end
+        # if the heurisric sol violates
+        if z1 > z_star
+            println("SP1 violated")
+            constraint1 = @build_constraint(sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]
+            * Mat[l, 3] *(1 + δ1_heur[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) for l in 1:arcs) <= z)
+
+            MOI.submit(MP, MOI.LazyConstraint(cb_data), constraint1)
+        end
+
+        # -------------
+        # solve SP2
+        # -------------
+        maxAugmentation2 = Dict( i => y_star[i] * (p[i] + 2*ph[i]) for i in 1:n)
+        δ2_heur = zeros((n))
+        z2 = 0
+        descendingV = reverse!(sort(collect(maxAugmentation2), by= x -> x[2]))
+
+        for (i, v) in descendingV
+            if sum(δ2_heur) + 2 <= d2
+                z2 += v
+                δ2_heur[i] = 2
+            else
+                δ2_heur[i] = d2 - sum(δ2_heur)
+                z2 += y_star[i] * (p[i] + δ2_heur[i]*ph[i])
+                break
+            end
+        end
+
+        # if the SP2 violates
+        if z2 - S > TOL
+            println("SP2 violated")
+            constraint2 = @build_constraint(sum(y[i] * (p[i] + δ2_heur[i] * ph[i]) for i in 1:n ) <= S)
+
+            MOI.submit(MP, MOI.LazyConstraint(cb_data), constraint2)
+        end
+
     end
+
+    if ExactCut
+        MOI.set(MP, MOI.LazyConstraintCallback(), callback_cuttingPlanes)
+    elseif HeurCut
+        MOI.set(MP, MOI.LazyConstraintCallback(), callback_heuristics)
+    end
+
     set_silent(MP) # turn off cplex output
 end
 
