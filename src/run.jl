@@ -30,10 +30,17 @@ function test()
     # isFeasible = verifyStaticSP(path, vertices)
     # println("isFeasible? ", isFeasible)
 
+    # println("sub-problem exact")
+    # path, vertices = brunchAndCut(true, false)
+    # isFeasible = verifyStaticSP(path, vertices)
+    # println("isFeasible? ", isFeasible)
 
-    path, vertices = brunchAndCut()
+    
+    println("sub-problem heurisric")
+    path, vertices = brunchAndCut(false, true)
     isFeasible = verifyStaticSP(path, vertices)
     println("isFeasible? ", isFeasible)
+
     
     # # cplex solve
     # path, vertices = cplexSolveStaticSP()
