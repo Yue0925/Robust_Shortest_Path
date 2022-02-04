@@ -1,6 +1,7 @@
 include("staticSP.jl")
 include("cuttingPlanes.jl")
 include("heuristics.jl")
+include("dual.jl")
 
 
 
@@ -85,8 +86,13 @@ function test()
     files = ["20_USA-road-d.BAY.gr", "20_USA-road-d.COL.gr", "20_USA-road-d.NY.gr", "40_USA-road-d.BAY.gr"]
 for fileName in files
     preparation(dir, fileName)
-    # cplex solve
-    sol = cplexSolveStaticSP()
+
+    # # cplex solve
+    # solStatic = cplexSolveStaticSP()
+
+    # dual 
+    solRobustDual = dualSolve()
+    sleep(5)
 
     #heuristicPrimal()
 
@@ -101,10 +107,12 @@ for fileName in files
     # isFeasible = verifyStaticSP(path, vertices)
     # println("isFeasible? ", isFeasible)
 
-    # println("sub-problem exact")
-    # path, vertices = brunchAndCut(true, false)
-    # isFeasible = verifyStaticSP(path, vertices)
-    # println("isFeasible? ", isFeasible)
+    println("sub-problem exact")
+    path, vertices = brunchAndCut(true, false)
+    isFeasible = verifyStaticSP(path, vertices)
+    println("isFeasible? ", isFeasible)
+
+    sleep(5)
 end
     
     # println("sub-problem heurisric")

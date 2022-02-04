@@ -19,6 +19,7 @@ using JuMP
 using StatsBase
 using Random
 
+include("io.jl")
 include("run.jl")
 test()
 ```
