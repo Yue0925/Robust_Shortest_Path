@@ -370,9 +370,6 @@ function initSenario(choix=0)
         end
     end
 
-    println("choix = ", choix)
-    println(U1_star)
-    println(U2_star)
     return U1_star, U2_star
 end
 
