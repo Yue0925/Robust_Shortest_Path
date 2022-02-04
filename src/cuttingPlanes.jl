@@ -341,7 +341,7 @@ function initSenario(choix=0)
         for l in 1:arcs
             U1_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] = Mat[l, 3]
         end
-        U2_star = [i for i in p]
+        U2_star = [i*1.0 for i in p]
     elseif choix == 1 # uniformément moyenne augmentation
         U1_star = zeros(n, n)
         moy1 = d1/arcs
@@ -349,7 +349,7 @@ function initSenario(choix=0)
             U1_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] = (1 + min(moy1, Mat[l, 4])) * Mat[l, 3]
         end
         moy2 = min(d2/n, 2)
-        U2_star = [p[i]+moy2*ph[i] for i in 1:n]
+        U2_star = [1.0*p[i]+moy2*ph[i] for i in 1:n]
     elseif choix == 2 # choisir aléatoirement un sous-ens à augmenter
         Random.seed!(1234)
         A = sample([i for i in 1:arcs], rand(1:arcs), replace = false)

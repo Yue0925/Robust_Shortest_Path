@@ -19,7 +19,11 @@ function heuristicPrimal()
     augmentedDist = zeros(n, n)
     Δ = zeros(n, n)
     for i in 1:arcs
-        augmentedDist[round(Int, Mat[i, 1]), round(Int, Mat[i, 2])] = Mat[i, 3] * (1 + Mat[i, 4])
+        weight = p[round(Int, Mat[i, 2])] + 4 * ph[round(Int, Mat[i, 2])]
+        if round(Int, Mat[i, 2]) == t || round(Int, Mat[i, 2]) == s
+            weight = 0
+        end
+        augmentedDist[round(Int, Mat[i, 1]), round(Int, Mat[i, 2])] = Mat[i, 3] * (1 + Mat[i, 4]) + weight
         Δ[round(Int, Mat[i, 1]), round(Int, Mat[i, 2])] = Mat[i, 4]
     end
 
