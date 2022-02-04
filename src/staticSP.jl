@@ -10,6 +10,8 @@ TOL = 0.00001
 Solve the static shortest path problem by CPLEX.
 
 ATTENTION: data should be charged before calling this function !
+
+Return : Solution
 """
 function cplexSolveStaticSP()
 
@@ -78,15 +80,14 @@ function cplexSolveStaticSP()
 
     # objective function
     @objective(M, Min, sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] for l in 1:arcs))
-    
-    # start a chronometer
-    start = time()
 
     # solve the problem
     optimize!(M)
 
-    computationTime = time() - start
     exploredNodes = MOI.get(backend(M), MOI.NodeCount())
+    GAP = MOI.get(M, MOI.RelativeGap())
+    solveTime = MOI.get(M, MOI.SolveTime())
+
 
     # status of model
     status = termination_status(M)
@@ -94,27 +95,38 @@ function cplexSolveStaticSP()
 
     path = Array{Tuple{Int64, Int64}, 1}()
     vertices = Array{Int64, 1}()
+    obj_val = 0.0
+    total_weight = 0
+    isFeasible = false
+
     # display solution
     println("isOptimal ? ", isOptimal)
-    println("the path from ", s, " to ", t, " is :")
-    for i in 1:n
-        if JuMP.value(y[i]) > TOL
-            append!(vertices, i)
-        end
-        for j in 1:n 
-            if JuMP.value(x[i, j]) > TOL
-                println("(", i, ", ", j, ")")
-                append!(path, [(i, j)])
+    println("GAP = ", GAP)
+    if isOptimal
+        println("the path from ", s, " to ", t, " is :")
+        for i in 1:n
+            if JuMP.value(y[i]) > TOL
+                append!(vertices, i)
+            end
+            for j in 1:n 
+                if JuMP.value(x[i, j]) > TOL
+                    println("(", i, ", ", j, ")")
+                    append!(path, [(i, j)])
+                end
             end
         end
+
+        obj_val = objective_value(M)
+        total_weight = sum(p[v] for v in vertices)
+        println("objective value : ", obj_val)
+        println("total weight : ", total_weight)
+        println("solveTime : ", solveTime)
+        println("nodes : ", exploredNodes)
+
+        isFeasible = verifyStaticSP(path, vertices)
     end
 
-    println("objective value : ", objective_value(M))
-    println("total weight : ", sum(p[v] for v in vertices))
-    println("time(s) : ", computationTime)
-    println("nodes : ", exploredNodes)
-
-    return path, vertices, isOptimal
+    return Solution(isOptimal, isFeasible, obj_val, total_weight, solveTime, GAP)
 end
 
 
@@ -122,6 +134,8 @@ end
 Verify whether the solution solved by CPLEX is feasible 
 (i.e. - a route from s to t 
       - the total weight doesn't not exceed to the limit S ) 
+
+Return : Bool
 """
 function verifyStaticSP(path::Array{Tuple{Int64, Int64}, 1}, vertices::Array{Int64, 1})
     predecessor = [0 for _ in 1:n]

@@ -3,6 +3,7 @@ include("cuttingPlanes.jl")
 include("heuristics.jl")
 
 
+
 """
 Prepare the global variables used in the project
 """
@@ -65,7 +66,6 @@ function preparation(dir::String, fileName::String)
             Mat = vcat(Mat, [parse(Int64, line[1]) parse(Int64, line[2]) parse(Int64, line[3]) parse(Float64, chop(line[4]))])
         end
     end
-    
 
     # matrix adjacecy 
     global Adjacenct = falses(n, n) 
@@ -82,8 +82,13 @@ function test()
 
     fileName = "20_USA-road-d.BAY.gr"
 
+    files = ["20_USA-road-d.BAY.gr", "20_USA-road-d.COL.gr", "20_USA-road-d.NY.gr", "40_USA-road-d.BAY.gr"]
+for fileName in files
     preparation(dir, fileName)
-    heuristicPrimal()
+    # cplex solve
+    sol = cplexSolveStaticSP()
+
+    #heuristicPrimal()
 
     # println("cuting planes exact")
     # path, vertices = cuttingPlanes(false, 2)
@@ -100,7 +105,7 @@ function test()
     # path, vertices = brunchAndCut(true, false)
     # isFeasible = verifyStaticSP(path, vertices)
     # println("isFeasible? ", isFeasible)
-
+end
     
     # println("sub-problem heurisric")
     # path, vertices = brunchAndCut(false, true)
@@ -108,11 +113,7 @@ function test()
     # println("isFeasible? ", isFeasible)
 
     
-    # # cplex solve
-    # path, vertices = cplexSolveStaticSP()
-    # # verification
-    # isFeasible = verifyStaticSP(path, vertices)
-    # println("isFeasible? ", isFeasible)
+
 
     # for file in files #readdir(dir)
     #     println(dir * file)
