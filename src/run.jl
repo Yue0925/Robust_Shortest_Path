@@ -1,10 +1,6 @@
 include("staticSP.jl")
 include("cuttingPlanes.jl")
-
-
-function lecturep(line::SubString{String})
-
-end
+include("heuristics.jl")
 
 
 """
@@ -87,6 +83,7 @@ function test()
     fileName = "20_USA-road-d.BAY.gr"
 
     preparation(dir, fileName)
+    heuristicPrimal()
 
     # println("cuting planes exact")
     # path, vertices = cuttingPlanes(false, 2)
@@ -117,7 +114,6 @@ function test()
     # isFeasible = verifyStaticSP(path, vertices)
     # println("isFeasible? ", isFeasible)
 
-    # files = ["20_USA-road-d.BAY.gr", "20_USA-road-d.COL.gr", "20_USA-road-d.NY.gr", "40_USA-road-d.BAY.gr"]
     # for file in files #readdir(dir)
     #     println(dir * file)
     #     preparation(dir, file)
