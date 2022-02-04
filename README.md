@@ -11,12 +11,16 @@
 # Suggestions
 
 * Rather than charging libraries in every file, uisng libraries only once in terminal before executing files. 
+* Move to the src directory : 
   
 ```julia
 using CPLEX 
 using JuMP
 using StatsBase
 using Random
+
+include("run.jl")
+test()
 ```
 
 * Package required : 
