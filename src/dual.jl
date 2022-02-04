@@ -24,7 +24,6 @@ function dualSolve()
         @constraint(M, β + ω[i] >= ph[i] * y[i])
     end
 
-    #@constraint(M, sum(p[i] * y[i] for i in 1:n) + d2 * β + sum(ω[i] * 2 for i in 1:n) <= S)
     @constraint(M, sum(p[i] * y[i] + 2 * ω[i] for i in 1:n) + d2 * β <= S)
 
     for i in 1:arcs
