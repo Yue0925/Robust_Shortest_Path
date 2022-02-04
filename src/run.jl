@@ -3,6 +3,7 @@ include("cuttingPlanes.jl")
 include("heuristics.jl")
 
 
+
 """
 Prepare the global variables used in the project
 """
@@ -84,7 +85,10 @@ function test()
     files = ["20_USA-road-d.BAY.gr", "20_USA-road-d.COL.gr", "20_USA-road-d.NY.gr", "40_USA-road-d.BAY.gr"]
 for fileName in files
     preparation(dir, fileName)
-    heuristicPrimal()
+    # cplex solve
+    sol = cplexSolveStaticSP()
+
+    #heuristicPrimal()
 
     # println("cuting planes exact")
     # path, vertices = cuttingPlanes(false, 2)
@@ -97,10 +101,10 @@ for fileName in files
     # isFeasible = verifyStaticSP(path, vertices)
     # println("isFeasible? ", isFeasible)
 
-    println("sub-problem exact")
-    path, vertices = brunchAndCut(true, false)
-    isFeasible = verifyStaticSP(path, vertices)
-    println("isFeasible? ", isFeasible)
+    # println("sub-problem exact")
+    # path, vertices = brunchAndCut(true, false)
+    # isFeasible = verifyStaticSP(path, vertices)
+    # println("isFeasible? ", isFeasible)
 end
     
     # println("sub-problem heurisric")
@@ -109,11 +113,7 @@ end
     # println("isFeasible? ", isFeasible)
 
     
-    # # cplex solve
-    # path, vertices = cplexSolveStaticSP()
-    # # verification
-    # isFeasible = verifyStaticSP(path, vertices)
-    # println("isFeasible? ", isFeasible)
+
 
     # for file in files #readdir(dir)
     #     println(dir * file)

@@ -2,16 +2,12 @@
 
 """
 A greedy primal heurisric solution.
+
+Idea : suppose that the distance of every arc is augmented to the maximum
+i.e. augmentation of D_ij % ∀ij, and select the shortest path s to t (Dijkstra) 
+without exceeding to S(so the weight of each vertex is extended to the maximum)
 """
 function heuristicPrimal()
-
-    # ---------------------------------------------------------------------------
-    # step 1: suppose that the distance of every arc is augmented to the maximum
-    # i.e. augmentation of D_ij % ∀ij, and select the shortest path s to t (Dijkstra) 
-    # without exceeding to S(so the weight of each vertex is extended to the maximum)
-    # ---------------------------------------------------------------------------
-    #TODO : weight robust to consider
-
     Q = [v for v in 1:n]
     prec = [0 for _ in 1:n]
     dist = Dict(v => Inf for v in Q)
