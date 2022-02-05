@@ -95,33 +95,32 @@ for fileName in files
 
 
     # dual 
-    println("dual")
-    solRobustDual = dualSolve()
+    # println("dual")
+    # solRobustDual = dualSolve()
 
-    sleep(5)
 
-    println("cuting planes exact")
-    solCuttingPlanes = cuttingPlanes(false)
-
+    # println("cuting planes exact")
+    # solCPExact = cuttingPlanes(false)
 
 
     # println("cuting planes heurisric")
-    # path, vertices = cuttingPlanes(true)
-    # isFeasible = verifyStaticSP(path, vertices)
-    # println("isFeasible? ", isFeasible)
+    # solCPHeur = cuttingPlanes(true)
+    # println("The gap between solCPExact and solCPHeur is ", abs(solCPExact.obj_val - solCPHeur.obj_val)/solCPExact.obj_val)
 
-    # println("sub-problem exact")
-    # path, vertices = brunchAndCut(true, false)
-    # isFeasible = verifyStaticSP(path, vertices)
-    # println("isFeasible? ", isFeasible)
+    println("Branch and Cut exact")
+    solBCExact = brunchAndCut(true, false)
+
+    sleep(5)
+
+    println("Branch and Cut heurisric")
+    solBCHeur = brunchAndCut(false, true)
+    println("The gap between solBCExact and solBCHeur is ", abs(solBCExact.obj_val - solBCHeur.obj_val)/solBCExact.obj_val)
+
 
     sleep(5)
 end
     
-    # println("sub-problem heurisric")
-    # path, vertices = brunchAndCut(false, true)
-    # isFeasible = verifyStaticSP(path, vertices)
-    # println("isFeasible? ", isFeasible)
+
 
     
 

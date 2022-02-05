@@ -16,30 +16,45 @@ function brunchAndCut(Exact=false, Heur = false, choix=0)
     statusMP = termination_status(MP)
     isOptimalMP = statusMP==MOI.OPTIMAL
 
-    println("masterPB isOptimal? ", isOptimalMP)
-
-
-    x = MP[:x]
-    y = MP[:y]
+    exploredNodes = MOI.get(backend(MP), MOI.NodeCount())
+    GAP = MOI.get(MP, MOI.RelativeGap())
+    solveTime = MOI.get(MP, MOI.SolveTime())
 
     path = Array{Tuple{Int64, Int64}, 1}()
     vertices = Array{Int64, 1}()
-    println("the path from ", s, " to ", t, " is :")
-    for i in 1:n
-        if JuMP.value(y[i]) > TOL
-            append!(vertices, i)
-        end
-        for j in 1:n 
-            if JuMP.value(x[i, j]) > TOL
-                println("(", i, ", ", j, ")")
-                append!(path, [(i, j)])
+    obj_val = 0.0
+    isFeasible = false
+
+    # display solution
+    println("masterPB isOptimal? ", isOptimalMP)
+    println("GAP = ", GAP)
+    if isOptimalMP
+        x = MP[:x]
+        y = MP[:y]
+    
+        println("the path from ", s, " to ", t, " is :")
+        for i in 1:n
+            if JuMP.value(y[i]) > TOL
+                append!(vertices, i)
+            end
+            for j in 1:n 
+                if JuMP.value(x[i, j]) > TOL
+                    println("(", i, ", ", j, ")")
+                    append!(path, [(i, j)])
+                end
             end
         end
+    
+        obj_val = objective_value(MP)
+        println("objective value : ", obj_val)
+        println("solveTime : ", solveTime)
+        println("nodes : ", exploredNodes)
+
+        isFeasible = verifyRobustSP(path, vertices)
+        println("isFeasible ? ", isFeasible)
     end
 
-    println("objective value : ", objective_value(MP))
-    println("total weight : ", sum(p[v] for v in vertices))
-    return path, vertices
+    return Solution(isOptimalMP, isFeasible, obj_val, solveTime, GAP)
 end
 
 
@@ -131,7 +146,7 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Float64,1}, ExactCut
     In the callback function, we solve the two sub-problems exact LP solutions for the cutting planes algorithm.
     """
     function callback_cuttingPlanes(cb_data::CPLEX.CallbackContext) # context_id::Clong
-        println("callback exact")
+        # println("callback exact")
         # get current variables
         x_star = zeros(n, n)
         y_star = zeros((n))
@@ -164,7 +179,7 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Float64,1}, ExactCut
 
         # if SP1 violates
         if z1_sub > z_star #abs(z_star - z1_sub) > TOL
-            println("SP1 violated")
+            # println("SP1 violated")
             δ1_star = value.(SM1[:δ1])
             constraint1 = @build_constraint(sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]
             * Mat[l, 3] *(1 + δ1_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) for l in 1:arcs) <= z)
@@ -174,7 +189,7 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Float64,1}, ExactCut
 
         # if the SP2 violates
         if z2_sub - S > TOL
-            println("SP2 violated")
+            # println("SP2 violated")
             δ2_star = value.(SM2[:δ2])
             constraint2 = @build_constraint(sum(y[i] * (p[i] + δ2_star[i] * ph[i]) for i in 1:n ) <= S)
 
@@ -186,7 +201,7 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Float64,1}, ExactCut
     In the callback function, we solve the two sub-problems heuristicly for the cutting planes algorithm.
     """
     function callback_heuristics(cb_data::CPLEX.CallbackContext)
-        println("callback heuristic")
+        # println("callback heuristic")
         # get current variables
         x_star = zeros(n, n)
         y_star = zeros((n))
@@ -205,7 +220,7 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Float64,1}, ExactCut
 
         # if the heurisric sol violates
         if z1 > z_star
-            println("SP1 violated")
+            # println("SP1 violated")
             constraint1 = @build_constraint(sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]
             * Mat[l, 3] *(1 + δ1_heur[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) for l in 1:arcs) <= z)
 
@@ -219,7 +234,7 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Float64,1}, ExactCut
 
         # if the SP2 violates
         if z2 - S > TOL
-            println("SP2 violated")
+            # println("SP2 violated")
             constraint2 = @build_constraint(sum(y[i] * (p[i] + δ2_heur[i] * ph[i]) for i in 1:n ) <= S)
 
             MOI.submit(MP, MOI.LazyConstraint(cb_data), constraint2)
