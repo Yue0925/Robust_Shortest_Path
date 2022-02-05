@@ -24,7 +24,7 @@ function dualSolve()
         @constraint(M, β + ω[i] >= ph[i] * y[i])
     end
 
-    @constraint(M, sum(p[i] * y[i] + 2 * ω[i] for i in 1:n) + d2 * β <= S)
+    @constraint(M, sum((p[i] * y[i] + 2 * ω[i]) for i in 1:n) + d2 * β <= S)
 
     for i in 1:arcs
         @constraint(M, α + λ[round(Int, Mat[i, 1]), round(Int, Mat[i, 2])] >= x[round(Int, Mat[i, 1]), round(Int, Mat[i, 2])] * round(Int, Mat[i, 3]))
@@ -35,9 +35,12 @@ function dualSolve()
     # prefix values
     # ---------------
     @constraint(M, x[n, n] == 0) # no bucles
+    @constraint(M, λ[n, n] == 0) # no bucles
 
     for i in 1:n-1
         @constraint(M, x[i, i] == 0)
+        @constraint(M, λ[i, i] == 0)
+
 
         for j in i+1:n
             # if arc x[ij]=1, then arc x[ji]=0
@@ -47,6 +50,9 @@ function dualSolve()
             if !Adjacenct[i, j]
                 @constraint(M, x[i, j] == 0)
                 @constraint(M, x[j, i] == 0)
+                @constraint(M, λ[j, i] == 0)
+                @constraint(M, λ[i, j] == 0)
+
             end
         end
     end
@@ -82,7 +88,8 @@ function dualSolve()
 
 
     # objective function
-    @objective(M, Min, sum(x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] for l in 1:arcs) + d1 * α +sum(λ[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * round(Int, Mat[l, 4]) for l in 1:arcs))
+    @objective(M, Min, sum( (x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] +
+    λ[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 4]) for l in 1:arcs) + d1 * α)
 
     # solve the problem
     optimize!(M)
