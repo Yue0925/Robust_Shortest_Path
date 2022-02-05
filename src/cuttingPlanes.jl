@@ -15,6 +15,7 @@ function brunchAndCut(Exact=false, Heur = false, choix=0)
     # status of model
     statusMP = termination_status(MP)
     isOptimalMP = statusMP==MOI.OPTIMAL
+
     println("masterPB isOptimal? ", isOptimalMP)
 
 
@@ -49,8 +50,9 @@ Define / modelize the master problem, by defaut we dont use callback
 function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Float64,1}, ExactCut=false, HeurCut = false)
     # modelization
     global MP = Model(CPLEX.Optimizer) 
-    # set_optimizer_attribute(MP, "CPX_PARAM_MIPDISPLAY", 2) # MIP display
-    #set_optimizer_attribute(MP, "CPXPARAM_TimeLimit", 500) # seconds
+
+    set_optimizer_attribute(MP, "CPXPARAM_TimeLimit", TimeLimit) # seconds
+
     # It is imposed to use only 1 thread in Julia with CPLEX to use the callbacks
     if ExactCut || HeurCut
         MOI.set(MP, MOI.NumberOfThreads(), 1)
@@ -144,11 +146,21 @@ function masterPB(U1_star::Array{Float64,2}, U2_star::Array{Float64,1}, ExactCut
         # solve the sub problems
         SM1 = subPB1(x_star)
         optimize!(SM1)
-        z1_sub = objective_value(SM1)
+        statusSM1 = termination_status(SM1)
+        isSM1Optimal = statusSM1==MOI.OPTIMAL
+        z1_sub = 0.0
+        if isSM1Optimal
+            z1_sub = objective_value(SM1)
+        end
 
         SM2 = subPB2(y_star)
         optimize!(SM2)
-        z2_sub = objective_value(SM2)
+        statusSM2 = termination_status(SM2)
+        isSM2Optimal = statusSM2==MOI.OPTIMAL
+        z2_sub = 0.0
+        if isSM2Optimal
+            z2_sub = objective_value(SM2)
+        end
 
         # if SP1 violates
         if z1_sub > z_star #abs(z_star - z1_sub) > TOL
@@ -232,6 +244,8 @@ function subPB1(x_star::Array{Float64,2})
     # modelization
     SM1 = Model(CPLEX.Optimizer) 
 
+    set_optimizer_attribute(SM1, "CPXPARAM_TimeLimit", TimeLimit) # seconds
+
     # variables
     @variable(SM1, δ1[1:n, 1:n] >= 0)
 
@@ -268,6 +282,8 @@ Define / modelize the sub problem SP2
 function subPB2(y_star::Array{Float64,1})
     # modelization
     SM2 = Model(CPLEX.Optimizer) 
+    
+    set_optimizer_attribute(SM2, "CPXPARAM_TimeLimit", TimeLimit) # seconds
 
     # variables
     @variable(SM2, 0 <= δ2[1:n] <= 2)
@@ -376,7 +392,7 @@ end
 
 
 """
-The naive cutting planes algorithm
+The naive cutting planes algorithm, by defaut we resolve the sub-problems exactly.
 """
 function cuttingPlanes(Heur=false, choix=0)
     # ---------------------------
@@ -385,9 +401,12 @@ function cuttingPlanes(Heur=false, choix=0)
     U1_star, U2_star = initSenario(choix)
 
     ite = 1
-    println("--------------")
-    println("step ", ite)
-    println("--------------")
+    # println("--------------")
+    # println("step ", ite)
+    # println("--------------")
+
+    # start a chronometer
+    start = time()
 
     # ------------------------------------
     # step 1 : resolve the master problem
@@ -400,7 +419,8 @@ function cuttingPlanes(Heur=false, choix=0)
     # status of model
     statusMP = termination_status(MP)
     isOptimalMP = statusMP==MOI.OPTIMAL
-    println("masterPB isOptimal? ", isOptimalMP)
+    # println("masterPB isOptimal? ", isOptimalMP)
+
 
     # get variables
     x_star = value.(MP[:x])
@@ -409,7 +429,7 @@ function cuttingPlanes(Heur=false, choix=0)
     x = MP[:x]
     z = MP[:z]
     y = MP[:y]
-    println("master z = ", z_star)
+    # println("master z = ", z_star)
 
 
     # ------------------------------------
@@ -426,12 +446,11 @@ function cuttingPlanes(Heur=false, choix=0)
     
         # status of model
         statusSM1 = termination_status(SM1)
-        isOptimalSM1 = statusSM1==MOI.OPTIMAL
-        println("subPB1 isOptimal? ", isOptimalSM1)
-    
-        # the objective value z1
-        z1_sub = objective_value(SM1)
-        println("z1_sub = ", z1_sub)
+        isSM1Optimal = statusSM1==MOI.OPTIMAL
+        z1_sub = 0.0
+        if isSM1Optimal
+            z1_sub = objective_value(SM1)
+        end
     
         SM2 = subPB2(y_star)
     
@@ -440,12 +459,11 @@ function cuttingPlanes(Heur=false, choix=0)
     
         # status of model
         statusSM2 = termination_status(SM2)
-        isOptimalSM2 = statusSM2==MOI.OPTIMAL
-        println("subPB2 isOptimal? ", isOptimalSM2)
-    
-        # the objective value z2
-        z2_sub = objective_value(SM2)
-        println("z2_sub = ", z2_sub)
+        isSM2Optimal = statusSM2==MOI.OPTIMAL
+        z2_sub = 0.0
+        if isSM2Optimal
+            z2_sub = objective_value(SM2)
+        end
     end
 
 
@@ -453,19 +471,20 @@ function cuttingPlanes(Heur=false, choix=0)
     # iteratively add senario to master problem
     # until reach the optimal condition
     # ----------------------------------------------------
-    while z1_sub > z_star || z2_sub - S > TOL
-        # if ite >300
-        #     break
-        # end
+    while (z1_sub > z_star || z2_sub - S > TOL) && isOptimalMP
+
+        if time() - start >= TimeLimit*4
+            break
+        end
 
         ite += 1
-        println("--------------")
-        println("step ", ite)
-        println("--------------")
+        # println("--------------")
+        # println("step ", ite)
+        # println("--------------")
 
         # if the SP1 violates
         if z1_sub > z_star #abs(z_star - z1_sub) > TOL
-            println("SP1 violated")
+            # println("SP1 violated")
             if Heur
                 δ1_star = δ1_heur
             else
@@ -476,7 +495,7 @@ function cuttingPlanes(Heur=false, choix=0)
 
         # if the SP2 violates
         if z2_sub - S > TOL
-            println("SP2 violated")
+            # println("SP2 violated")
             if Heur
                 δ2_star = δ2_heur
             else
@@ -493,7 +512,7 @@ function cuttingPlanes(Heur=false, choix=0)
         # status of model
         statusMP = termination_status(MP)
         isOptimalMP = statusMP==MOI.OPTIMAL
-        println("masterPB isOptimal? ", isOptimalMP)
+        # println("masterPB isOptimal? ", isOptimalMP)
 
         # get variables
         x_star = value.(MP[:x])
@@ -502,7 +521,7 @@ function cuttingPlanes(Heur=false, choix=0)
         x = MP[:x]
         z = MP[:z]
         y = MP[:y]
-        println("master z = ", z_star)
+        # println("master z = ", z_star)
 
 
         # ------------------------------------
@@ -517,44 +536,60 @@ function cuttingPlanes(Heur=false, choix=0)
     
             # status of model
             statusSM1 = termination_status(SM1)
-            isOptimalSM1 = statusSM1==MOI.OPTIMAL
-            println("subPB1 isOptimal? ", isOptimalSM1)
-    
-            # the objective value z1
-            z1_sub = objective_value(SM1)
-            println("z1_sub = ", z1_sub)
+            isSM1Optimal = statusSM1==MOI.OPTIMAL
+            z1_sub = 0.0
+            if isSM1Optimal
+                z1_sub = objective_value(SM1)
+            end
     
             SM2 = subPB2(y_star)
             optimize!(SM2)
     
             # status of model
             statusSM2 = termination_status(SM2)
-            isOptimalSM2 = statusSM2==MOI.OPTIMAL
-            println("subPB2 isOptimal? ", isOptimalSM2)
-    
-            # the objective value z2
-            z2_sub = objective_value(SM2)
-            println("z2_sub = ", z2_sub)
-        end
-
-    end
-
-    path = Array{Tuple{Int64, Int64}, 1}()
-    vertices = Array{Int64, 1}()
-    println("the path from ", s, " to ", t, " is :")
-    for i in 1:n
-        if JuMP.value(y[i]) > TOL
-            append!(vertices, i)
-        end
-        for j in 1:n 
-            if JuMP.value(x[i, j]) > TOL
-                println("(", i, ", ", j, ")")
-                append!(path, [(i, j)])
+            isSM2Optimal = statusSM2==MOI.OPTIMAL
+            z2_sub = 0.0
+            if isSM2Optimal
+                z2_sub = objective_value(SM2)
             end
         end
+
     end
 
-    println("objective value : ", objective_value(MP))
-    println("total weight : ", sum(p[v] for v in vertices))
-    return path, vertices
+    solveTime = time() - start
+
+    # ---------------------
+    # post treatment
+    # ---------------------
+    GAP = MOI.get(MP, MOI.RelativeGap())
+    obj_val = 0.0
+    isFeasible = false
+
+    # display solution
+    println("isOptimalMP ? ", isOptimalMP)
+    println("GAP = ", GAP)
+    if isOptimalMP
+        path = Array{Tuple{Int64, Int64}, 1}()
+        vertices = Array{Int64, 1}()
+        println("the path from ", s, " to ", t, " is :")
+        for i in 1:n
+            if JuMP.value(y[i]) > TOL
+                append!(vertices, i)
+            end
+            for j in 1:n 
+                if JuMP.value(x[i, j]) > TOL
+                    println("(", i, ", ", j, ")")
+                    append!(path, [(i, j)])
+                end
+            end
+        end
+    
+        obj_val = objective_value(MP)
+        println("objective value : ", obj_val)
+
+        isFeasible = verifyRobustSP(path, vertices)
+        println("isFeasible ? ", isFeasible)
+    end
+
+    return Solution(isOptimalMP, isFeasible, obj_val, solveTime, GAP)
 end

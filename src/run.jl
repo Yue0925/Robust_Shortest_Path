@@ -90,16 +90,19 @@ for fileName in files
     # # cplex solve
     # solStatic = cplexSolveStaticSP()
 
+    # heurisric robustness
+    # heuristicPrimal()
+
+
     # dual 
+    println("dual")
     solRobustDual = dualSolve()
+
     sleep(5)
 
-    heuristicPrimal()
+    println("cuting planes exact")
+    solCuttingPlanes = cuttingPlanes(false)
 
-    # println("cuting planes exact")
-    # path, vertices = cuttingPlanes(false, 2)
-    # isFeasible = verifyStaticSP(path, vertices)
-    # println("isFeasible? ", isFeasible)
 
 
     # println("cuting planes heurisric")

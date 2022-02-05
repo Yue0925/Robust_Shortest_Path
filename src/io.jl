@@ -8,7 +8,9 @@ struct Solution
     isOptimal::Bool
     isFeasible::Bool
     obj_val::Float64
-    total_weight::Int64
     solveTime::Float64
     GAP::Float64
 end
+
+# time limit in seconds
+global TimeLimit = 500
