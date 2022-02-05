@@ -75,6 +75,6 @@ function heuristicPrimal()
     end
 
     println("robustDist : ", robustDist)
-    println(δ1)
-    println(acc)
+    isFeasible = verifyRobustSP(path, vertices)
+    println("isFeasible ? ", isFeasible)
 end

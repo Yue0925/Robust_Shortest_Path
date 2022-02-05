@@ -6,7 +6,7 @@ function dualSolve()
     # modelization
     M = Model(CPLEX.Optimizer) 
     # set_optimizer_attribute(M, "CPX_PARAM_MIPDISPLAY", 2) # MIP display
-    set_optimizer_attribute(M, "CPXPARAM_TimeLimit", 500) # seconds
+    set_optimizer_attribute(M, "CPXPARAM_TimeLimit", TimeLimit) # seconds
 
     # variables
     @variable(M, y[1:n], Bin)
@@ -91,6 +91,8 @@ function dualSolve()
     @objective(M, Min, sum( (x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] +
     λ[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 4]) for l in 1:arcs) + d1 * α)
 
+    set_silent(M) # turn off cplex output
+
     # solve the problem
     optimize!(M)
 
@@ -105,7 +107,6 @@ function dualSolve()
     path = Array{Tuple{Int64, Int64}, 1}()
     vertices = Array{Int64, 1}()
     obj_val = 0.0
-    total_weight = 0
     isFeasible = false
 
     # display solution
@@ -126,14 +127,13 @@ function dualSolve()
         end
 
         obj_val = objective_value(M)
-        total_weight = sum(p[v] for v in vertices)
         println("objective value : ", obj_val)
-        println("total weight : ", total_weight)
         println("solveTime : ", solveTime)
         println("nodes : ", exploredNodes)
 
-        isFeasible = verifyStaticSP(path, vertices)
+        isFeasible = verifyRobustSP(path, vertices)
+        println("isFeasible ? ", isFeasible)
     end
 
-    return Solution(isOptimal, isFeasible, obj_val, total_weight, solveTime, GAP)
+    return Solution(isOptimal, isFeasible, obj_val, solveTime, GAP)
 end
