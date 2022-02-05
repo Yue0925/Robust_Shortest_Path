@@ -90,6 +90,8 @@ function dualSolve()
     # objective function
     @objective(M, Min, sum( (x[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] +
     λ[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 4]) for l in 1:arcs) + d1 * α)
+    
+    set_silent(M) # turn off cplex output
 
     # solve the problem
     optimize!(M)
@@ -132,7 +134,7 @@ function dualSolve()
         println("solveTime : ", solveTime)
         println("nodes : ", exploredNodes)
 
-        isFeasible = verifyStaticSP(path, vertices)
+        isFeasible = verifyRobustSP(path, vertices)
     end
 
     return Solution(isOptimal, isFeasible, obj_val, total_weight, solveTime, GAP)

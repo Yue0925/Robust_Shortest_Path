@@ -94,7 +94,7 @@ for fileName in files
     solRobustDual = dualSolve()
     sleep(5)
 
-    #heuristicPrimal()
+    heuristicPrimal()
 
     # println("cuting planes exact")
     # path, vertices = cuttingPlanes(false, 2)
@@ -107,10 +107,10 @@ for fileName in files
     # isFeasible = verifyStaticSP(path, vertices)
     # println("isFeasible? ", isFeasible)
 
-    println("sub-problem exact")
-    path, vertices = brunchAndCut(true, false)
-    isFeasible = verifyStaticSP(path, vertices)
-    println("isFeasible? ", isFeasible)
+    # println("sub-problem exact")
+    # path, vertices = brunchAndCut(true, false)
+    # isFeasible = verifyStaticSP(path, vertices)
+    # println("isFeasible? ", isFeasible)
 
     sleep(5)
 end

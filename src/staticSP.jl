@@ -155,3 +155,50 @@ function verifyStaticSP(path::Array{Tuple{Int64, Int64}, 1}, vertices::Array{Int
 
     return sum(p[v] for v in vertices) <= S
 end
+
+
+
+"""
+Verify the solution is robust feasible.
+"""
+function verifyRobustSP(path::Array{Tuple{Int64, Int64}, 1}, vertices::Array{Int64, 1})
+    # at first it is a feasible static path
+    isFeasible = verifyStaticSP(path, vertices)
+    if isFeasible == false
+        return false
+    end
+
+    # secondly, the total robust weight should not exceed to S
+    
+    # modelization
+    M = Model(CPLEX.Optimizer) 
+
+    # variables
+    @variable(M, 0 <= δ2[1:n] <= 2)
+
+    for i in 1:n
+        if !(i in vertices)
+            @constraint(M, δ2[i] == 0)
+        end
+    end
+
+    # total augmentation limit
+    @constraint(M, sum(δ2[i] for i in vertices) <= d2 )
+
+    # objective function
+    @objective(M, Max, sum((p[v] + δ2[v] * ph[v]) for v in vertices ))
+    
+    set_silent(M) # turn off cplex output
+    optimize!(M)
+
+    # status of model
+    status = termination_status(M)
+    isOptimal = status==MOI.OPTIMAL
+
+    if isOptimal
+        obj_val = objective_value(M)
+        return obj_val<=S
+    end
+    println("CPLEX sol not optimal")
+    return false
+end
