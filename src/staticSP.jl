@@ -99,11 +99,13 @@ function cplexSolveStaticSP()
     vertices = Array{Int64, 1}()
     obj_val = 0.0
     isFeasible = false
+    best_bound = 0.0
 
     # display solution
     println("isOptimal ? ", isOptimal)
     println("GAP = ", GAP)
-    if isOptimal
+
+    if has_values(M)
         println("the path from ", s, " to ", t, " is :")
         for i in 1:n
             if JuMP.value(y[i]) > TOL
@@ -118,7 +120,10 @@ function cplexSolveStaticSP()
         end
 
         obj_val = objective_value(M)
+        best_bound = objective_bound(M)
+
         println("objective value : ", obj_val)
+        println("best bound : ", best_bound)
         println("solveTime : ", solveTime)
         println("nodes : ", exploredNodes)
 
@@ -126,7 +131,7 @@ function cplexSolveStaticSP()
         println("isFeasible ? ", isFeasible)
     end
 
-    return Solution(isOptimal, isFeasible, obj_val, solveTime, GAP)
+    return Solution(isOptimal, isFeasible, obj_val, solveTime, GAP, best_bound)
 end
 
 

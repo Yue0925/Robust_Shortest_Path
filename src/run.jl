@@ -87,37 +87,47 @@ function test()
 for fileName in files
     preparation(dir, fileName)
 
-    # # cplex solve
+    # cplex solve    
+    # println("static")
     # solStatic = cplexSolveStaticSP()
+    # sleep(5)
 
     # heurisric robustness
-    # heuristicPrimal()
+    println("heuristic")
+    heuristicPrimal()
+    sleep(5)
 
 
     # dual 
-    # println("dual")
-    # solRobustDual = dualSolve()
+    println("dual")
+    solRobustDual = dualSolve()
+    sleep(5)
 
 
     # println("cuting planes exact")
     # solCPExact = cuttingPlanes(false)
 
 
+    # println("cuting planes exact --- Influence of init senarios")
+    # for choix in [0 1 2]
+    #     solCPExact = cuttingPlanes(false, choix)
+    #     println("choix = ", choix, " solveTime : ", solCPExact.solveTime)
+    #     sleep(5)
+    # end
+
+
     # println("cuting planes heurisric")
     # solCPHeur = cuttingPlanes(true)
     # println("The gap between solCPExact and solCPHeur is ", abs(solCPExact.obj_val - solCPHeur.obj_val)/solCPExact.obj_val)
 
-    println("Branch and Cut exact")
-    solBCExact = brunchAndCut(true, false)
-
-    sleep(5)
-
-    println("Branch and Cut heurisric")
-    solBCHeur = brunchAndCut(false, true)
-    println("The gap between solBCExact and solBCHeur is ", abs(solBCExact.obj_val - solBCHeur.obj_val)/solBCExact.obj_val)
+    # println("Branch and Cut exact")
+    # solBCExact = brunchAndCut(true, false)
 
 
-    sleep(5)
+    # println("Branch and Cut heurisric")
+    # solBCHeur = brunchAndCut(false, true)
+    # println("The gap between solBCExact and solBCHeur is ", abs(solBCExact.obj_val - solBCHeur.obj_val)/solBCExact.obj_val)
+    #sleep(5)
 end
     
 

@@ -8,6 +8,10 @@ i.e. augmentation of D_ij % ∀ij, and select the shortest path s to t (Dijkstra
 without exceeding to S(so the weight of each vertex is extended to the maximum)
 """
 function heuristicPrimal()
+
+    # start a chronometer
+    start = time()
+
     Q = [v for v in 1:n]
     prec = [0 for _ in 1:n]
     dist = Dict(v => Inf for v in Q)
@@ -41,6 +45,8 @@ function heuristicPrimal()
             end
         end
     end
+
+    solveTime = time() - start
 
     path = Array{Tuple{Int64, Int64}, 1}()
     vertices = Array{Int64, 1}()
