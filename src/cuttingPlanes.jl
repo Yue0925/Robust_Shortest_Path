@@ -24,11 +24,13 @@ function brunchAndCut(Exact=false, Heur = false, choix=0)
     vertices = Array{Int64, 1}()
     obj_val = 0.0
     isFeasible = false
+    best_bound = 0.0
 
     # display solution
     println("masterPB isOptimal? ", isOptimalMP)
     println("GAP = ", GAP)
-    if isOptimalMP
+
+    if has_values(MP)
         x = MP[:x]
         y = MP[:y]
     
@@ -46,7 +48,10 @@ function brunchAndCut(Exact=false, Heur = false, choix=0)
         end
     
         obj_val = objective_value(MP)
+        best_bound = objective_bound(MP)
+
         println("objective value : ", obj_val)
+        println("best bound : ", best_bound)
         println("solveTime : ", solveTime)
         println("nodes : ", exploredNodes)
 
@@ -54,7 +59,7 @@ function brunchAndCut(Exact=false, Heur = false, choix=0)
         println("isFeasible ? ", isFeasible)
     end
 
-    return Solution(isOptimalMP, isFeasible, obj_val, solveTime, GAP)
+    return Solution(isOptimalMP, isFeasible, obj_val, solveTime, GAP, best_bound)
 end
 
 
@@ -579,11 +584,13 @@ function cuttingPlanes(Heur=false, choix=0)
     GAP = MOI.get(MP, MOI.RelativeGap())
     obj_val = 0.0
     isFeasible = false
+    best_bound = 0.0
 
     # display solution
     println("isOptimalMP ? ", isOptimalMP)
     println("GAP = ", GAP)
-    if isOptimalMP
+
+    if has_values(MP)
         path = Array{Tuple{Int64, Int64}, 1}()
         vertices = Array{Int64, 1}()
         println("the path from ", s, " to ", t, " is :")
@@ -601,10 +608,11 @@ function cuttingPlanes(Heur=false, choix=0)
     
         obj_val = objective_value(MP)
         println("objective value : ", obj_val)
-
+        best_bound = objective_bound(MP)
+        println("best bound : ", best_bound)
         isFeasible = verifyRobustSP(path, vertices)
         println("isFeasible ? ", isFeasible)
     end
 
-    return Solution(isOptimalMP, isFeasible, obj_val, solveTime, GAP)
+    return Solution(isOptimalMP, isFeasible, obj_val, solveTime, GAP, best_bound)
 end

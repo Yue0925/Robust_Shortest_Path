@@ -10,6 +10,7 @@ struct Solution
     obj_val::Float64
     solveTime::Float64
     GAP::Float64
+    best_bound::Float64
 end
 
 # time limit in seconds

@@ -87,28 +87,33 @@ function test()
 for fileName in files
     preparation(dir, fileName)
 
-    # # cplex solve
+    # cplex solve    
+    # println("static")
     # solStatic = cplexSolveStaticSP()
+    # sleep(5)
 
     # heurisric robustness
-    # heuristicPrimal()
+    println("heuristic")
+    heuristicPrimal()
+    sleep(5)
 
 
     # dual 
-    # println("dual")
-    # solRobustDual = dualSolve()
+    println("dual")
+    solRobustDual = dualSolve()
+    sleep(5)
 
 
     # println("cuting planes exact")
     # solCPExact = cuttingPlanes(false)
 
 
-    println("cuting planes exact --- Influence of init senarios")
-    for choix in [0 1 2]
-        solCPExact = cuttingPlanes(false, choix)
-        println("choix = ", choix, " solveTime : ", solCPExact.solveTime)
-        sleep(5)
-    end
+    # println("cuting planes exact --- Influence of init senarios")
+    # for choix in [0 1 2]
+    #     solCPExact = cuttingPlanes(false, choix)
+    #     println("choix = ", choix, " solveTime : ", solCPExact.solveTime)
+    #     sleep(5)
+    # end
 
 
     # println("cuting planes heurisric")
@@ -122,9 +127,7 @@ for fileName in files
     # println("Branch and Cut heurisric")
     # solBCHeur = brunchAndCut(false, true)
     # println("The gap between solBCExact and solBCHeur is ", abs(solBCExact.obj_val - solBCHeur.obj_val)/solBCExact.obj_val)
-
-
-    sleep(5)
+    #sleep(5)
 end
     
 
