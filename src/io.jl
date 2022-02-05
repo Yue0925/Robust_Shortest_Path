@@ -13,5 +13,5 @@ struct Solution
     best_bound::Float64
 end
 
-# time limit in seconds
-global TimeLimit = 500
+# time limit in seconds 60 !!!
+global TimeLimit = 60

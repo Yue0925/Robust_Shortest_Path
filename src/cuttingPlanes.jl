@@ -467,6 +467,8 @@ function cuttingPlanes(Heur=false, choix=0)
         # status of model
         statusSM1 = termination_status(SM1)
         isSM1Optimal = statusSM1==MOI.OPTIMAL
+        # println("SP1 isOptimal? ", isSM1Optimal)
+
         z1_sub = 0.0
         if isSM1Optimal
             z1_sub = objective_value(SM1)
@@ -480,6 +482,8 @@ function cuttingPlanes(Heur=false, choix=0)
         # status of model
         statusSM2 = termination_status(SM2)
         isSM2Optimal = statusSM2==MOI.OPTIMAL
+        # println("SP2 isOptimal? ", isSM2Optimal)
+
         z2_sub = 0.0
         if isSM2Optimal
             z2_sub = objective_value(SM2)
@@ -491,7 +495,7 @@ function cuttingPlanes(Heur=false, choix=0)
     # iteratively add senario to master problem
     # until reach the optimal condition
     # ----------------------------------------------------
-    while (z1_sub > z_star || z2_sub - S > TOL) && isOptimalMP
+    while (z1_sub -z_star >TOL || z2_sub - S > TOL) && isOptimalMP
 
         if time() - start >= TimeLimit*4
             break
@@ -503,8 +507,9 @@ function cuttingPlanes(Heur=false, choix=0)
         # println("--------------")
 
         # if the SP1 violates
-        if z1_sub > z_star #abs(z_star - z1_sub) > TOL
+        if z1_sub - z_star > TOL #abs(z_star - z1_sub) > TOL
             # println("SP1 violated")
+            # println("z1_sub = ", z1_sub, " ; z_star = ", z_star)
             if Heur
                 δ1_star = δ1_heur
             else
@@ -557,6 +562,8 @@ function cuttingPlanes(Heur=false, choix=0)
             # status of model
             statusSM1 = termination_status(SM1)
             isSM1Optimal = statusSM1==MOI.OPTIMAL
+            # println("SP1 isOptimal? ", isSM1Optimal)
+
             z1_sub = 0.0
             if isSM1Optimal
                 z1_sub = objective_value(SM1)
@@ -568,6 +575,8 @@ function cuttingPlanes(Heur=false, choix=0)
             # status of model
             statusSM2 = termination_status(SM2)
             isSM2Optimal = statusSM2==MOI.OPTIMAL
+            # println("SP2 isOptimal? ", isSM2Optimal)
+
             z2_sub = 0.0
             if isSM2Optimal
                 z2_sub = objective_value(SM2)
@@ -613,6 +622,7 @@ function cuttingPlanes(Heur=false, choix=0)
         isFeasible = verifyRobustSP(path, vertices)
         println("isFeasible ? ", isFeasible)
     end
+    println("solveTime = ", solveTime)
 
     return Solution(isOptimalMP, isFeasible, obj_val, solveTime, GAP, best_bound)
 end
