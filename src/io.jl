@@ -13,5 +13,10 @@ struct Solution
     best_bound::Float64
 end
 
-# time limit in seconds
-global TimeLimit = 500
+struct SolHeur
+    solveTime::Float64
+    obj_val::Float64
+end
+
+# time limit in seconds 60 !!!
+global TimeLimit = 60

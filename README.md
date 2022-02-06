@@ -18,14 +18,18 @@ using CPLEX
 using JuMP
 using StatsBase
 using Random
+using PyPlot
 
 include("io.jl")
 include("run.jl")
-test()
+
+
+test() 
 ```
 
 * Package required : 
   
 ```julia
-  import Pkg; Pkg.add("StatsBase")
+import Pkg; Pkg.add("StatsBase")
+import Pkg; Pkg.add("PyPlot")
 ```
