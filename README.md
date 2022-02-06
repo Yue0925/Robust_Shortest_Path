@@ -22,7 +22,9 @@ using PyPlot
 
 include("io.jl")
 include("run.jl")
-test() # or other function you want to lance
+
+
+test() 
 ```
 
 * Package required : 

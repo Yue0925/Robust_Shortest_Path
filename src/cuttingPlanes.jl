@@ -497,7 +497,7 @@ function cuttingPlanes(Heur=false, choix=0)
     # ----------------------------------------------------
     while (z1_sub -z_star >TOL || z2_sub - S > TOL) && isOptimalMP
 
-        if time() - start >= TimeLimit*4
+        if time() - start >= TimeLimit*1
             break
         end
 

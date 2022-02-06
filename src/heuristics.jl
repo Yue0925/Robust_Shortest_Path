@@ -83,4 +83,5 @@ function heuristicPrimal()
     println("robustDist : ", robustDist)
     isFeasible = verifyRobustSP(path, vertices)
     println("isFeasible ? ", isFeasible)
+    return SolHeur(solveTime, robustDist)
 end
