@@ -22,9 +22,9 @@ using PyPlot
 
 include("io.jl")
 include("run.jl")
-
-
 test() 
+generateSenariosInfl()
+
 ```
 
 * Package required : 
