@@ -185,7 +185,7 @@ function generateSubHeurInfl()
         # for each instances
         # reading data
         preparation(dir, fileName)
-        if n>700
+        if n>=700
             break #TODO: processors are KILLED ! 
         end
 
@@ -381,7 +381,7 @@ function generateSenariosInfl()
         # for each instances
         # reading data
         preparation(dir, fileName)
-        if n > 700
+        if n >= 700
             break #TODO: processors are KILLED ! 
         end
 
