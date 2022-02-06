@@ -334,10 +334,11 @@ function heuristicSP1(x_star::Array{Float64,2})
         if sum(δ1_heur) + Mat[l, 4] <= d1
             z1 += v
             δ1_heur[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] = Mat[l, 4]
-        else
+        elseif sum(δ1_heur) < d1
             δ1_heur[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] = d1 - sum(δ1_heur)
             z1 += x_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] * (1 + δ1_heur[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])]) 
-            break
+        else
+            z1 += x_star[round(Int, Mat[l, 1]), round(Int, Mat[l, 2])] * Mat[l, 3] 
         end
     end
     return δ1_heur, z1
@@ -357,10 +358,11 @@ function heuristicSP2(y_star::Array{Float64,1})
         if sum(δ2_heur) + 2 <= d2
             z2 += v
             δ2_heur[i] = 2
-        else
+        elseif sum(δ2_heur) < d2
             δ2_heur[i] = d2 - sum(δ2_heur)
             z2 += y_star[i] * (p[i] + δ2_heur[i]*ph[i])
-            break
+        else
+            z2 += y_star[i] * p[i]
         end
     end
     return δ2_heur, z2
