@@ -185,6 +185,9 @@ function generateSubHeurInfl()
         # for each instances
         # reading data
         preparation(dir, fileName)
+        if n>700
+            break #TODO: processors are KILLED ! 
+        end
 
         print(fout, n, " & ")
 
@@ -351,7 +354,6 @@ Test on the cutting planes algorithm.
 function generateSenariosInfl()
     dir = "../Instances/"
     files = sort(readdir(dir), by = x -> parse(Int64, split(x, "_")[1]))
-    files = ["750_USA-road-d.BAY.gr", "750_USA-road-d.COL.gr", "750_USA-road-d.NY.gr"]
 
     dir_res = "../res/PCSenariosInfl/"
 
@@ -379,6 +381,9 @@ function generateSenariosInfl()
         # for each instances
         # reading data
         preparation(dir, fileName)
+        if n > 700
+            break #TODO: processors are KILLED ! 
+        end
 
         print(fout, n)
 
@@ -423,6 +428,7 @@ end
 function totalReults()
     dir = "../Instances/"
     files = sort(readdir(dir), by = x -> parse(Int64, split(x, "_")[1]))
+    files = ["750_USA-road-d.BAY.gr", "750_USA-road-d.COL.gr", "750_USA-road-d.NY.gr"]
 
     dir_res = "../res/totalReults/"
     KEYS = ["CPExact", "BCExact", "Dual", "BCHeur", "Heur"]

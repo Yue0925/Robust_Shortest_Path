@@ -460,7 +460,7 @@ function cuttingPlanes(Heur=false, choix=0)
         y = MP[:y]
         # println("master z = ", z_star)
     catch
-        return postTraitement(start, y, x, isOptimalMP)
+        error("Time Out ! ")
     end
 
     if time() - start >= TimeLimit
@@ -489,7 +489,7 @@ function cuttingPlanes(Heur=false, choix=0)
                 z1_sub = objective_value(SM1)
             end
         catch
-            return postTraitement(start, y, x, isOptimalMP)
+            error("Time Out ! ")
         end
 
         SM2 = subPB2(y_star)
@@ -508,7 +508,7 @@ function cuttingPlanes(Heur=false, choix=0)
                 z2_sub = objective_value(SM2)
             end
         catch
-            return postTraitement(start, y, x, isOptimalMP)
+            error("Time Out ! ")
         end
 
     end
@@ -575,7 +575,7 @@ function cuttingPlanes(Heur=false, choix=0)
             y = MP[:y]
             # println("master z = ", z_star)
         catch
-            return postTraitement(start, y, x, isOptimalMP)
+            error("Time Out ! ")
         end
 
         # ------------------------------------
