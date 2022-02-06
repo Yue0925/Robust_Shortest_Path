@@ -420,6 +420,8 @@ function cuttingPlanes(Heur=false, choix=0)
     # ---------------------------
     U1_star, U2_star = initSenario(choix)
 
+    isOptimalMP = false
+
     ite = 1
     # println("--------------")
     # println("step ", ite)
@@ -432,25 +434,38 @@ function cuttingPlanes(Heur=false, choix=0)
     # step 1 : resolve the master problem
     # ------------------------------------
     masterPB(U1_star, U2_star)
-
-    # solve the master problem
-    optimize!(MP)
-
-    # status of model
-    statusMP = termination_status(MP)
-    isOptimalMP = statusMP==MOI.OPTIMAL
-    # println("masterPB isOptimal? ", isOptimalMP)
-
-
-    # get variables
-    x_star = value.(MP[:x])
-    z_star = value(MP[:z])
-    y_star = value.(MP[:y])
     x = MP[:x]
     z = MP[:z]
     y = MP[:y]
-    # println("master z = ", z_star)
+    x_star = 0.0
+    z_star = 0.0
+    y_star = 0.0
 
+    try
+        # solve the master problem
+        optimize!(MP)
+
+        # status of model
+        statusMP = termination_status(MP)
+        isOptimalMP = statusMP==MOI.OPTIMAL
+        # println("masterPB isOptimal? ", isOptimalMP)
+
+
+        # get variables
+        x_star = value.(MP[:x])
+        z_star = value(MP[:z])
+        y_star = value.(MP[:y])
+        x = MP[:x]
+        z = MP[:z]
+        y = MP[:y]
+        # println("master z = ", z_star)
+    catch
+        error("Time Out ! ")
+    end
+
+    if time() - start >= TimeLimit
+        return postTraitement(start, y, x, isOptimalMP)
+    end
 
     # ------------------------------------
     # step 2 : resolve the sub problems
@@ -461,35 +476,46 @@ function cuttingPlanes(Heur=false, choix=0)
     else
         SM1 = subPB1(x_star)
 
-        # solve the sub problem related to U1
-        optimize!(SM1)
-    
-        # status of model
-        statusSM1 = termination_status(SM1)
-        isSM1Optimal = statusSM1==MOI.OPTIMAL
-        # println("SP1 isOptimal? ", isSM1Optimal)
+        try
+            # solve the sub problem related to U1
+            optimize!(SM1)
+            # status of model
+            statusSM1 = termination_status(SM1)
+            isSM1Optimal = statusSM1==MOI.OPTIMAL
+            # println("SP1 isOptimal? ", isSM1Optimal)
 
-        z1_sub = 0.0
-        if isSM1Optimal
-            z1_sub = objective_value(SM1)
+            z1_sub = 0.0
+            if isSM1Optimal
+                z1_sub = objective_value(SM1)
+            end
+        catch
+            error("Time Out ! ")
         end
-    
+
         SM2 = subPB2(y_star)
-    
-        # solve the sub problem related to U2
-        optimize!(SM2)
-    
-        # status of model
-        statusSM2 = termination_status(SM2)
-        isSM2Optimal = statusSM2==MOI.OPTIMAL
-        # println("SP2 isOptimal? ", isSM2Optimal)
 
-        z2_sub = 0.0
-        if isSM2Optimal
-            z2_sub = objective_value(SM2)
+        try
+            # solve the sub problem related to U2
+            optimize!(SM2)
+        
+            # status of model
+            statusSM2 = termination_status(SM2)
+            isSM2Optimal = statusSM2==MOI.OPTIMAL
+            # println("SP2 isOptimal? ", isSM2Optimal)
+
+            z2_sub = 0.0
+            if isSM2Optimal
+                z2_sub = objective_value(SM2)
+            end
+        catch
+            error("Time Out ! ")
         end
+
     end
 
+    if time() - start >= TimeLimit
+        return postTraitement(start, y, x, isOptimalMP)
+    end
 
     # ----------------------------------------------------
     # iteratively add senario to master problem
@@ -497,7 +523,7 @@ function cuttingPlanes(Heur=false, choix=0)
     # ----------------------------------------------------
     while (z1_sub -z_star >TOL || z2_sub - S > TOL) && isOptimalMP
 
-        if time() - start >= TimeLimit*1
+        if time() - start >= TimeLimit
             break
         end
 
@@ -532,22 +558,25 @@ function cuttingPlanes(Heur=false, choix=0)
         # ------------------------------------
         # step 1 : resolve the master problem
         # ------------------------------------
-        optimize!(MP)
+        try
+            optimize!(MP)
 
-        # status of model
-        statusMP = termination_status(MP)
-        isOptimalMP = statusMP==MOI.OPTIMAL
-        # println("masterPB isOptimal? ", isOptimalMP)
-
-        # get variables
-        x_star = value.(MP[:x])
-        z_star = value(MP[:z])
-        y_star = value.(MP[:y])
-        x = MP[:x]
-        z = MP[:z]
-        y = MP[:y]
-        # println("master z = ", z_star)
-
+            # status of model
+            statusMP = termination_status(MP)
+            isOptimalMP = statusMP==MOI.OPTIMAL
+            # println("masterPB isOptimal? ", isOptimalMP)
+    
+            # get variables
+            x_star = value.(MP[:x])
+            z_star = value(MP[:z])
+            y_star = value.(MP[:y])
+            x = MP[:x]
+            z = MP[:z]
+            y = MP[:y]
+            # println("master z = ", z_star)
+        catch
+            error("Time Out ! ")
+        end
 
         # ------------------------------------
         # step 2 : resolve the sub problems
@@ -585,6 +614,10 @@ function cuttingPlanes(Heur=false, choix=0)
 
     end
 
+    return postTraitement(start, y, x, isOptimalMP)
+end
+
+function postTraitement(start, y, x, isOptimalMP)
     solveTime = time() - start
 
     # ---------------------
