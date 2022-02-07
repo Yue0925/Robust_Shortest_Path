@@ -1,4 +1,5 @@
 # This file contains heurisric solutions for the robust shortest path problem 
+include("cuttingPlanes.jl")
 
 """
 A greedy primal heurisric solution.
@@ -58,30 +59,43 @@ function heuristicPrimal()
     end
     append!(vertices, s)
 
-    δ1 = Dict(a => 0.0 for a in path)
-    acc = 0.0
-    robustDist = 0.0
-    sort!(path, by = x -> augmentedDist[x[1], x[2]], rev = true)
-    for a in path
-        if acc + Δ[a[1], a[2]] < d1
-            δ1[a] = Δ[a[1], a[2]]
-            acc += Δ[a[1], a[2]]
-        else
-            δ1[a] = d1 - acc
-            acc += δ1[a]
-            break
-        end
+    x_star = zeros(n, n)
+    for (i, j) in path
+        x_star[i, j] = 1.0
     end
 
-    for i in 1:arcs
-        a = (round(Int, Mat[i, 1]), round(Int, Mat[i, 2]))
-        if a in path
-            robustDist += Mat[i, 3] * (1 + δ1[a])
-        end
-    end
+    δ1_heur, z1 = heuristicSP1(x_star)
 
-    println("robustDist : ", robustDist)
+    y_star = zeros((n))
+    for v in vertices
+        y_star[v] = 1.0
+    end
+    δ2_heur, z2 = heuristicSP2(y_star)
+
+    # δ1 = Dict(a => 0.0 for a in path)
+    # acc = 0.0
+    # robustDist = 0.0
+    # sort!(path, by = x -> augmentedDist[x[1], x[2]], rev = true)
+    # for a in path
+    #     if acc + Δ[a[1], a[2]] < d1
+    #         δ1[a] = Δ[a[1], a[2]]
+    #         acc += Δ[a[1], a[2]]
+    #     else
+    #         δ1[a] = d1 - acc
+    #         acc += δ1[a]
+    #         break
+    #     end
+    # end
+
+    # for i in 1:arcs
+    #     a = (round(Int, Mat[i, 1]), round(Int, Mat[i, 2]))
+    #     if a in path
+    #         robustDist += Mat[i, 3] * (1 + δ1[a])
+    #     end
+    # end
+
+    println("robustDist : ", z1)
     isFeasible = verifyRobustSP(path, vertices)
     println("isFeasible ? ", isFeasible)
-    return SolHeur(solveTime, robustDist)
+    return SolHeur(solveTime, z1)
 end
