@@ -325,7 +325,7 @@ function generateSubHeurInfl()
     end
 
     legend()
-    # yscale("log")
+    yscale("log")
     # xscale("log")
     title("Comparison of the best objective bounds")
     xlabel("Cities")
@@ -338,7 +338,7 @@ function generateSubHeurInfl()
     end
 
     legend()
-    # yscale("log")
+    yscale("log")
     # xscale("log")
     title("Comparison of the computation times")
     xlabel("Cities")
@@ -381,7 +381,7 @@ function generateSenariosInfl()
         # for each instances
         # reading data
         preparation(dir, fileName)
-        if n >= 700
+        if n >= 450
             break #TODO: processors are KILLED ! 
         end
 
@@ -428,7 +428,6 @@ end
 function totalReults()
     dir = "../Instances/"
     files = sort(readdir(dir), by = x -> parse(Int64, split(x, "_")[1]))
-    files = ["800_USA-road-d.COL.gr", "800_USA-road-d.NY.gr", "900_USA-road-d.COL.gr", "900_USA-road-d.NY.gr"]
 
     dir_res = "../res/totalReults/"
     KEYS = ["CPExact", "BCExact", "Dual", "BCHeur", "Heur"]
@@ -464,6 +463,9 @@ function totalReults()
 
         # reading data
         preparation(dir, fileName)
+        if n >= 400
+            break #TODO: processors are KILLED ! 
+        end
 
         print(fout, n)
         robust_val = 0.0

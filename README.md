@@ -1,5 +1,5 @@
 # Robust_Shortest_Path
- A project on the Robust Shortest Path Problem for the course ECMA of MPRO 2021-2022, collaborated by Yue and Salah.
+ A project on the Robust Shortest Path Problem for the course ECMA of MPRO 2021-2022, finished by Yue only.
 
 
 
@@ -23,7 +23,7 @@ using PyPlot
 include("io.jl")
 include("run.jl")
 test() 
-generateSenariosInfl()
+benchmarks()
 
 ```
 
